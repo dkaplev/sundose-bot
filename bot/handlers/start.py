@@ -26,14 +26,40 @@ class Onboarding(StatesGroup):
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
+    args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
+
+    if args.startswith("duel_"):
+        await _handle_duel_start(message, session, args[5:])
+        return
+
+    if args.startswith("duo_"):
+        await _handle_duo_start(message, args[4:])
+        return
+
     user, created = await crud.get_or_create_user(session, message.from_user.id)
     if not created and user.city:
         lang = user.language
-        await message.answer(t(lang, "already_registered"))
+        await message.answer(t(lang, "already_registered"), reply_markup=kb.main_reply_kb(lang))
         return
 
     await state.clear()
     await message.answer(t("ru", "choose_language"), reply_markup=kb.language_kb())
+
+
+async def _handle_duel_start(message: Message, session: AsyncSession, token: str):
+    from db.models import Duel
+    duel = await crud.get_duel_by_token(session, token)
+    if not duel or duel.status != "pending" or duel.challenger == message.from_user.id:
+        await message.answer("Ссылка недействительна или дуэль уже началась.")
+        return
+    user, _ = await crud.get_or_create_user(session, message.from_user.id)
+    lang = user.language
+    await crud.accept_duel(session, duel, message.from_user.id)
+    await message.answer(t(lang, "duel_accepted", opponent="challenger"), parse_mode="HTML")
+
+
+async def _handle_duo_start(message: Message, partner_id_str: str):
+    await message.answer(f"Твой напарник пригласил тебя в SunDose! Пройди /start чтобы настроить бота, а затем они смогут отметить вас как пару ☀️")
 
 
 @router.callback_query(F.data.startswith("lang:"))
@@ -168,6 +194,7 @@ async def cb_notify_hour(call: CallbackQuery, state: FSMContext, session: AsyncS
 
     await state.clear()
     await call.message.edit_text(text, parse_mode="HTML")
+    await call.message.answer("☀️", reply_markup=kb.main_reply_kb(lang))
     await call.answer()
 
 

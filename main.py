@@ -9,6 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from bot.handlers import info, settings, start
+from bot.handlers import duels
 from bot.middleware import DatabaseMiddleware
 from bot.scheduler import setup_scheduler
 from config import BOT_TOKEN, DATABASE_URL
@@ -37,6 +38,7 @@ async def main():
     dp.include_router(start.router)
     dp.include_router(settings.router)
     dp.include_router(info.router)
+    dp.include_router(duels.router)
 
     scheduler = AsyncIOScheduler()
     setup_scheduler(scheduler, bot, session_factory)
@@ -44,7 +46,7 @@ async def main():
 
     logger.info("SunDose bot starting...")
     try:
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types(), scheduler=scheduler)
     finally:
         scheduler.shutdown()
         await bot.session.close()

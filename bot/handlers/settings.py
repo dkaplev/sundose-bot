@@ -37,7 +37,7 @@ async def settings_city(call: CallbackQuery, state: FSMContext, session: AsyncSe
     user = await crud.get_user(session, call.from_user.id)
     lang = user.language if user else "ru"
     await state.set_state(SettingsFSM.city_input)
-    await state.update_data(lang=lang, context="settings")
+    await state.update_data(lang=lang)
     await call.message.answer(t(lang, "ask_city"))
     await call.answer()
 
@@ -82,23 +82,45 @@ async def settings_lang(call: CallbackQuery, state: FSMContext, session: AsyncSe
     await call.answer()
 
 
+@router.callback_query(F.data == "settings:evening")
+async def settings_evening(call: CallbackQuery, session: AsyncSession):
+    user = await crud.get_user(session, call.from_user.id)
+    if not user:
+        await call.answer()
+        return
+    lang = user.language
+    new_val = not user.evening_notify
+    await crud.update_user(session, call.from_user.id, evening_notify=new_val)
+    key = "evening_notify_on" if new_val else "evening_notify_off"
+    await call.message.answer(t(lang, key))
+    await call.answer()
+
+
+@router.callback_query(F.data == "settings:leaderboard")
+async def settings_leaderboard(call: CallbackQuery, session: AsyncSession):
+    user = await crud.get_user(session, call.from_user.id)
+    if not user:
+        await call.answer()
+        return
+    lang = user.language
+    new_val = not user.leaderboard_opt_in
+    await crud.update_user(session, call.from_user.id, leaderboard_opt_in=new_val)
+    key = "leaderboard_on" if new_val else "leaderboard_off"
+    await call.message.answer(t(lang, key))
+    await call.answer()
+
+
 @router.message(SettingsFSM.city_input)
 async def settings_city_input(message: Message, state: FSMContext):
     data = await state.get_data()
     lang = data.get("lang", "ru")
-
     geo = await geocode_city(message.text.strip())
     if not geo:
         await message.answer(t(lang, "city_not_found"))
         return
-
     await state.update_data(geo=geo)
     await state.set_state(SettingsFSM.city_confirm)
-    await message.answer(
-        t(lang, "city_found", display=geo["display"]),
-        reply_markup=kb.city_confirm_kb(lang),
-        parse_mode="HTML",
-    )
+    await message.answer(t(lang, "city_found", display=geo["display"]), reply_markup=kb.city_confirm_kb(lang), parse_mode="HTML")
 
 
 @router.callback_query(F.data == "city:confirm", SettingsFSM.city_confirm)
@@ -106,17 +128,8 @@ async def settings_city_confirm(call: CallbackQuery, state: FSMContext, session:
     data = await state.get_data()
     lang = data.get("lang", "ru")
     geo = data["geo"]
-
     tz = get_timezone(geo["lat"], geo["lon"])
-    await crud.update_user(
-        session,
-        call.from_user.id,
-        city=geo["city"],
-        lat=geo["lat"],
-        lon=geo["lon"],
-        timezone=tz,
-    )
-
+    await crud.update_user(session, call.from_user.id, city=geo["city"], lat=geo["lat"], lon=geo["lon"], timezone=tz)
     await state.clear()
     await call.message.edit_text(t(lang, "city_updated", display=geo["display"]), parse_mode="HTML")
     await call.answer()

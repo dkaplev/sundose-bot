@@ -1,5 +1,5 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
 def language_kb() -> InlineKeyboardMarkup:
@@ -12,41 +12,37 @@ def language_kb() -> InlineKeyboardMarkup:
 
 
 def start_onboarding_kb(lang: str) -> InlineKeyboardMarkup:
-    label = "Поехали! 🚀" if lang == "ru" else "Let's go! 🚀"
     builder = InlineKeyboardBuilder()
-    builder.button(text=label, callback_data="onboarding:start")
+    builder.button(text="Поехали! 🚀" if lang == "ru" else "Let's go! 🚀", callback_data="onboarding:start")
     return builder.as_markup()
 
 
 def city_confirm_kb(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    correct = "✅ Верно" if lang == "ru" else "✅ Correct"
-    fix = "✏️ Исправить" if lang == "ru" else "✏️ Fix"
     builder.row(
-        InlineKeyboardButton(text=correct, callback_data="city:confirm"),
-        InlineKeyboardButton(text=fix, callback_data="city:retry"),
+        InlineKeyboardButton(text="✅ Верно" if lang == "ru" else "✅ Correct", callback_data="city:confirm"),
+        InlineKeyboardButton(text="✏️ Исправить" if lang == "ru" else "✏️ Fix", callback_data="city:retry"),
     )
     return builder.as_markup()
 
 
 def skin_type_kb(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    if lang == "ru":
-        skins = [
+    skins = (
+        [
             ("🏻 Очень светлая — всегда обгораю", "skin:1"),
             ("🏼 Светлая — иногда обгораю", "skin:2"),
             ("🏽 Средняя — редко обгораю", "skin:3"),
             ("🏾 Смуглая — почти не обгораю", "skin:4"),
             ("🏿 Тёмная — никогда не обгораю", "skin:5"),
-        ]
-    else:
-        skins = [
+        ] if lang == "ru" else [
             ("🏻 Very light — always burn", "skin:1"),
             ("🏼 Light — sometimes burn", "skin:2"),
             ("🏽 Medium — rarely burn", "skin:3"),
             ("🏾 Tan — almost never burn", "skin:4"),
             ("🏿 Dark — never burn", "skin:5"),
         ]
+    )
     for text, data in skins:
         builder.button(text=text, callback_data=data)
     builder.adjust(1)
@@ -55,18 +51,17 @@ def skin_type_kb(lang: str) -> InlineKeyboardMarkup:
 
 def exposed_area_kb(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    if lang == "ru":
-        areas = [
+    areas = (
+        [
             ("💪 Только руки и лицо", "area:arms"),
             ("🦵 Руки + ноги (шорты/платье)", "area:arms_legs"),
             ("🏊 Руки + ноги + живот (пляж)", "area:full"),
-        ]
-    else:
-        areas = [
+        ] if lang == "ru" else [
             ("💪 Arms and face only", "area:arms"),
             ("🦵 Arms + legs (shorts/dress)", "area:arms_legs"),
             ("🏊 Arms + legs + torso (beach)", "area:full"),
         ]
+    )
     for text, data in areas:
         builder.button(text=text, callback_data=data)
     builder.adjust(1)
@@ -77,8 +72,7 @@ def notify_hour_kb(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for h in [7, 8, 9, 10, 11]:
         builder.button(text=f"{h}:00", callback_data=f"hour:{h}")
-    label = "Другое время..." if lang == "ru" else "Other time..."
-    builder.button(text=label, callback_data="hour:custom")
+    builder.button(text="Другое время..." if lang == "ru" else "Other time...", callback_data="hour:custom")
     builder.adjust(3)
     return builder.as_markup()
 
@@ -98,16 +92,49 @@ def morning_notification_kb(lang: str, date_str: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="✅ Вышел сегодня", callback_data=f"went_out:{date_str}"),
             InlineKeyboardButton(text="⏭ Пропустил", callback_data=f"skipped:{date_str}"),
         )
-        builder.row(
-            InlineKeyboardButton(text="📍 Сменить город", callback_data="settings:city")
-        )
+        builder.row(InlineKeyboardButton(text="📍 Сменить город", callback_data="settings:city"))
     else:
         builder.row(
             InlineKeyboardButton(text="✅ Went out", callback_data=f"went_out:{date_str}"),
             InlineKeyboardButton(text="⏭ Skipped", callback_data=f"skipped:{date_str}"),
         )
+        builder.row(InlineKeyboardButton(text="📍 Change city", callback_data="settings:city"))
+    return builder.as_markup()
+
+
+def now_active_kb(lang: str, date_str: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if lang == "ru":
         builder.row(
-            InlineKeyboardButton(text="📍 Change city", callback_data="settings:city")
+            InlineKeyboardButton(text="✅ Вышел", callback_data=f"went_out:{date_str}"),
+            InlineKeyboardButton(text="⏰ Напомни через 30 мин", callback_data="remind:30"),
+        )
+    else:
+        builder.row(
+            InlineKeyboardButton(text="✅ Went out", callback_data=f"went_out:{date_str}"),
+            InlineKeyboardButton(text="⏰ Remind in 30 min", callback_data="remind:30"),
+        )
+    return builder.as_markup()
+
+
+def now_inactive_kb(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    label = "🔔 Напомни за 30 мин" if lang == "ru" else "🔔 Remind 30 min before"
+    builder.button(text=label, callback_data="remind:window")
+    return builder.as_markup()
+
+
+def alone_or_together_kb(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if lang == "ru":
+        builder.row(
+            InlineKeyboardButton(text="🙋 Один", callback_data="session:alone"),
+            InlineKeyboardButton(text="👫 С кем-то", callback_data="session:together"),
+        )
+    else:
+        builder.row(
+            InlineKeyboardButton(text="🙋 Alone", callback_data="session:alone"),
+            InlineKeyboardButton(text="👫 With someone", callback_data="session:together"),
         )
     return builder.as_markup()
 
@@ -120,6 +147,8 @@ def settings_kb(lang: str) -> InlineKeyboardMarkup:
             ("🎨 Тип кожи", "settings:skin"),
             ("👕 Открытая зона", "settings:area"),
             ("🔔 Время уведомлений", "settings:hour"),
+            ("🌙 Вечерний прогноз", "settings:evening"),
+            ("🏙 Рейтинг городов", "settings:leaderboard"),
             ("🌍 Язык / Language", "settings:lang"),
         ]
     else:
@@ -128,9 +157,18 @@ def settings_kb(lang: str) -> InlineKeyboardMarkup:
             ("🎨 Skin type", "settings:skin"),
             ("👕 Exposed area", "settings:area"),
             ("🔔 Notification time", "settings:hour"),
+            ("🌙 Evening forecast", "settings:evening"),
+            ("🏙 City leaderboard", "settings:leaderboard"),
             ("🌍 Language / Язык", "settings:lang"),
         ]
     for text, data in items:
         builder.button(text=text, callback_data=data)
     builder.adjust(1)
     return builder.as_markup()
+
+
+def main_reply_kb(lang: str) -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    label = "☀️ Проверить сейчас" if lang == "ru" else "☀️ Check now"
+    builder.button(text=label)
+    return builder.as_markup(resize_keyboard=True)
