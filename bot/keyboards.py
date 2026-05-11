@@ -117,10 +117,18 @@ def now_active_kb(lang: str, date_str: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def now_inactive_kb(lang: str) -> InlineKeyboardMarkup:
+def now_inactive_kb(lang: str, date_str: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    label = "🔔 Напомни за 30 мин" if lang == "ru" else "🔔 Remind 30 min before"
-    builder.button(text=label, callback_data="remind:window")
+    if lang == "ru":
+        builder.row(
+            InlineKeyboardButton(text="✅ Вышел сегодня", callback_data=f"went_out:{date_str}"),
+            InlineKeyboardButton(text="🔔 Напомни за 30 мин", callback_data="remind:window"),
+        )
+    else:
+        builder.row(
+            InlineKeyboardButton(text="✅ Went out today", callback_data=f"went_out:{date_str}"),
+            InlineKeyboardButton(text="🔔 Remind 30 min before", callback_data="remind:window"),
+        )
     return builder.as_markup()
 
 

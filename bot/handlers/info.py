@@ -83,7 +83,7 @@ async def cmd_now(message: Message, session: AsyncSession, scheduler: AsyncIOSch
                 next_h = window[0][0] if window else 11
                 window_msg = t(lang, "now_window_none", time=f"{next_h:02d}:00")
             text = t(lang, "now_inactive", city=user.city, uv=f"{current_uv:.1f}", window_msg=window_msg)
-            await message.answer(text, reply_markup=kb.now_inactive_kb(lang), parse_mode="HTML")
+            await message.answer(text, reply_markup=kb.now_inactive_kb(lang, date_str), parse_mode="HTML")
 
     except Exception:
         await message.answer(t(lang, "error_uv"))
